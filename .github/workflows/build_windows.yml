@@ -1,24 +1,36 @@
-name: Build Windows
+name: PyInstaller Build
 
 on:
   push:
     branches: [main]
-  pull_request:
-    branches: [main]
 
 jobs:
   build:
-    runs-on: windows-latest
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [macos-latest, windows-latest, ubuntu-latest]
 
     steps:
     - name: Checkout code
       uses: actions/checkout@v2
 
-    - name: Install PyInstaller and dependencies
-      run: |
-        pip install pyinstaller
-        pip install -r requirements.txt
+    - name: Setup Python
+      uses: actions/setup-python@v2
+      with:
+        python-version: 3.8
 
-    - name: Build executable
+    - name: Install PyInstaller
+      run: pip install pyinstaller
+
+    - name: Install requirements
+      run: pip install -r requirements.txt
+
+    - name: Build PyInstaller package
       run: pyinstaller --onefile main.py
 
+    - name: Upload artifact
+      uses: actions/upload-artifact@v2
+      with:
+        name: my_script_package
+        path: dist/

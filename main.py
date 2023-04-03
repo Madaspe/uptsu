@@ -12,6 +12,16 @@ from PyQt5.QtWidgets import QApplication, QMainWindow, QWidget, QTableWidget, QT
 
 regex_fio = r"^[А-ЯЁ][а-яё]*([-][А-ЯЁ][а-яё]*)?\s[А-ЯЁ][а-яё]*\s[А-ЯЁ][а-яё]*$"
 
+data_practice = {
+    "учебная": {
+        "ознакомительная": "Ознакомительная практика",
+        "научно-исследовательская работа": "Научно-исследовательская работа (получение первичных навыков научно-исследовательской работы)"
+    },
+    "производственная": {
+        "технологическая": "Технологическая (проектно-технологическая) практика",
+        "преддипломная": "Преддипломная практика"
+    }
+}
 def open_file(path):
     if platform.system() == "Windows":
         os.startfile(path)
@@ -156,8 +166,17 @@ class ExcelParser(QMainWindow):
         self.date2 = QDateEdit(self)
         self.date2.setCalendarPopup(True)
 
+        self.practice_combo_temp = QComboBox(self)
+
+        self.practice_combo_temp.currentIndexChanged.connect(self.practice_combo_change)
+
+        self.practice_combo_temp_2 = QComboBox(self)
+
+
         self.input_layout.addWidget(self.label4)
         self.input_layout.addWidget(self.date2)
+        self.input_layout.addWidget(self.load_values_in_combo(self.practice_combo_temp,type_load=""))
+        self.input_layout.addWidget(self.practice_combo_temp_2)
         # self.date2.move(100, 450)
 
         # Create a button to load the Excel file
@@ -174,6 +193,11 @@ class ExcelParser(QMainWindow):
         self.show_db = QPushButton("Редактировать списки практик", self.central_widget)
         self.show_db.clicked.connect(self.show_db_window)
         self.central_layout.addWidget(self.show_db)
+
+    def practice_combo_change(self):
+        self.practice_combo_temp_2.clear()
+        for i in data_practice[self.practice_combo_temp.currentText()].keys():
+            self.practice_combo_temp_2.addItem(i)
 
     def change_db_handler(self):
         for combo in self.combos:
@@ -238,9 +262,6 @@ class ExcelParser(QMainWindow):
                 self.table.setItem(i, 3, item)
                 self.table.setCellWidget(i, 4, box)
 
-                box = self.load_values_in_combo(QComboBox(self), type_load="practice")
-                self.combos_type_practise.append(box)
-                self.table.setCellWidget(i, 5, box)
 
             self.table.resizeColumnsToContents()
             self.table.resizeRowsToContents()
@@ -260,7 +281,7 @@ class ExcelParser(QMainWindow):
             fio = self.table.item(i, 0).text() + " " + self.table.item(i, 1).text() + " " + self.table.item(i, 2).text()
             dest = self.table.item(i, 3).text()
             practice_name = self.combos[i].currentText()
-            practice_type = self.combos_type_practise[i].currentText()
+            practice_type = data_practice[self.practice_combo_temp.currentText()][self.practice_combo_temp_2.currentText()]
 
             if dest.lower().strip() == "бюджет":
                 selector = "budget_people"
@@ -268,11 +289,6 @@ class ExcelParser(QMainWindow):
                 selector = "paid_people"
             else:
                 selector = "target_people"
-
-            if practice_type.lower().strip() == "учебная":
-                practice_type = "учебная (тип:  практика по получению первичных профессиональных умений и навыков, в том числе  первичных умений и навыков научно-исследовательской деятельности, 3 з.е.)"
-            else:
-                practice_type = "производственная  (тип:  практика по получению профессиональных умений и опыта профессиональной деятельности, 5 з.е.)"
 
             date1 = self.date1.date().toPyDate()
             date2 = self.date2.date().toPyDate()
@@ -282,7 +298,7 @@ class ExcelParser(QMainWindow):
                 "dest": dest,
                 "practice_name": practice_name,
                 "practice_type": practice_type,
-                "practice_type_short": self.combos_type_practise[i].currentText(),
+                "practice_type_short": self.practice_combo_temp.currentText(),
                 "start_time": f"{date1.day}.{date1.month}.{date1.year}",
                 "end_time": f"{date2.day}.{date2.month}.{date2.year}",
                 "group": self.input2.text()
